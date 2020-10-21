@@ -31,17 +31,25 @@ class Input extends Frame implements KeyListener {
 
   public void keyPressed(KeyEvent e) {
     if (e.getKeyCode() == KeyEvent.VK_UP) {
-      direction.x = 0;
-      direction.y = -1;
+      if (direction.x != 0 || direction.y != 1) {
+        direction.x = 0;
+        direction.y = -1;
+      }
     } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-      direction.x = 0;
-      direction.y = 1;
+      if (direction.x != 0 || direction.y != -1) {
+        direction.x = 0;
+        direction.y = 1;
+      }
     } else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-      direction.x = -1;
-      direction.y = 0;
+      if (direction.y != 0 || direction.x != 1) {
+        direction.x = -1;
+        direction.y = 0;
+      }
     } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-      direction.x = 1;
-      direction.y = 0;
+      if (direction.y != 0 || direction.x != -1) {
+        direction.x = 1;
+        direction.y = 0;
+      }
     }
   }
 
@@ -100,7 +108,6 @@ class Snake {
 // Our game
 class Game {
   private int score = 0;
-  private Point dir;
   private Point bound;
   private Point food = new Point(0,0);
   private char[][] cells;
@@ -112,14 +119,14 @@ class Game {
   // constructor
   Game(Point bound) {
     this.bound = bound;
-    dir = new Point(0, -1);
-
     cells = new char[bound.x][bound.y];
+
     for (int i = 0; i < bound.y; ++i) {
       for (int j = 0; j < bound.x; ++j) {
         cells[i][j] = ' ';
       }
     }
+
     cells[bound.y-1][bound.x/2] = 'O';
     snake = new Snake(bound);
 
@@ -157,7 +164,7 @@ class Game {
   boolean updateState() {
     int lastTailX = snake.tail.pos.x;
     int lastTailY = snake.tail.pos.y;
-    int moveCode = snake.move(dir);
+    int moveCode = snake.move(input.direction);
     // I hit a wall!
     if (moveCode == -1) {
       return false;
@@ -204,26 +211,12 @@ class Game {
     food.y = posY;
   }
 
-  // Input processing. Changes dir based on pressed arrow keys
-  void processInput() {
-    // I can't directly move the opposite direction, only turn left/right.
-    if (dir.x == input.direction.x && dir.y == -input.direction.y) {
-      return;
-    }
-    if (dir.y == input.direction.y && dir.x == -input.direction.x) {
-      return;
-    }
-    dir.x = input.direction.x;
-    dir.y = input.direction.y;
-  }
-
   // the game entry point
   void start() throws InterruptedException, IOException {
     System.out.println("Press ENTER to start");
     Scanner sc = new Scanner(System.in);
     sc.nextLine();
     while(true) {
-      processInput();
       if (!updateState()) {
         System.out.println("GAME OVER.");
         return;
