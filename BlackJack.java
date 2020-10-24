@@ -28,11 +28,9 @@ class Card {
             return "XX";
         }
         String suit = "♥♦♣♠";
-        if(value == 1) return ("A" + suit.charAt(this.suit));
-        else if(value == 11) return ("J" + suit.charAt(this.suit));
-        else if(value == 12) return ("Q" + suit.charAt(this.suit));
-        else if(value == 13) return ("K" + suit.charAt(this.suit));
-        return ("" + this.value + suit.charAt(this.suit));
+		String value = " A23456789 JQK";
+		if (this.value == 10) return "10" + suit.charAt(this.suit);
+        return ("" + value.charAt(this.value) + suit.charAt(this.suit));
     }
 }
 
