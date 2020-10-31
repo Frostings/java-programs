@@ -21,9 +21,11 @@ class Input extends Frame implements KeyListener {
   private TextArea area;
 
   Input() {
+    
     direction = new Point(0, -1);
     area = new TextArea();
     area.addKeyListener(this);
+    setSize(100,100);
     add(area);
     setLayout(null);
     setVisible(true);  
@@ -117,8 +119,12 @@ class Game {
   private BufferedOutputStream buffer = new BufferedOutputStream(System.out);
 
   // constructor
-  Game(Point bound) {
+  Game(Point bound, Input input) {
     this.bound = bound;
+    this.input = input;
+    input.direction.x = 0;
+    input.direction.y = -1;
+
     cells = new char[bound.x][bound.y];
 
     for (int i = 0; i < bound.y; ++i) {
@@ -129,8 +135,7 @@ class Game {
 
     cells[bound.y-1][bound.x/2] = 'O';
     snake = new Snake(bound);
-
-    input = new Input();
+    
     createFood();
   }
 
@@ -230,13 +235,14 @@ class Game {
 public class Main {
   public static void main(String[] args) throws InterruptedException, IOException {
     boolean playAgain = true;
+    Input input = new Input();
     do {
       Scanner sc = new Scanner(System.in);
-      Game game = new Game(new Point(30, 30));
+      Game game = new Game(new Point(30, 30), input);
       game.start();
       System.out.println("PLAY AGAIN? [Y/N]");
-      String input = sc.nextLine();
-      if (input.equals("N") || input.equals("n")) {
+      String in = sc.nextLine();
+      if (in.equals("N") || in.equals("n")) {
         playAgain = false;
       }
     } while (playAgain);
