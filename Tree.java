@@ -24,14 +24,11 @@ public class Tree<T extends Comparable> implements List<T>{
         }
         
         private void print(String prefix, boolean last) {
-            String newPrefix = last ? "┖╴" : "┠╴";
-    	    System.out.println(prefix + newPrefix + value);
+    	    System.out.println(prefix + (last ? "┖╴" : "┠╴") + value);
     	    if (left != null) {
-    		    newPrefix = last ? "  " : "┃ ";
-    		    left.print(prefix + newPrefix, right == null);
+    		    left.print(prefix + (last ? "  " : "┃ "), right == null);
     	    } if (right != null) {
-    	        newPrefix = last ? "  " : "┃ ";
-    		    right.print(prefix + newPrefix, true);
+    		    right.print(prefix + (last ? "  " : "┃ "), true);
     	    }
         }
     }
@@ -69,12 +66,11 @@ public class Tree<T extends Comparable> implements List<T>{
             }
         }
     }
-  
+    
     public static void main(String[] args) {
-		    ArrayList<Integer> list = new ArrayList<Integer>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
-		    Collections.shuffle(list);
-		    System.out.println(list);
-		    Tree<Integer> tree = new Tree<Integer>(list);
-		    tree.print();
-	  }
+		ArrayList<Integer> list = new ArrayList<Integer>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
+		Collections.shuffle(list);
+		Tree<Integer> tree = new Tree<Integer>(list);
+		tree.print();
+	}
 }
