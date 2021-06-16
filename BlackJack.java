@@ -1,245 +1,288 @@
-import java.util.Random;
 import java.util.Scanner;
+
 
 class Card {
     private int suit = 0;
     private int value = 1;
-    boolean isFaceUp = true;
+    private boolean isFaceUp = true;
     
-    Card(int value, int suit){
+    
+    Card(int value, int suit) {
         this.value = value;
         this.suit = suit;
     }
+    
     
     int getValue() {
         return value;
     }
     
+    
     int getSuit() {
         return suit;
     }
+    
     
     void flip() {
         isFaceUp = !isFaceUp;
     }
     
-    String toStr(){
+    
+    public String toString() {
         if (!isFaceUp) {
             return "XX";
         }
-        String suit = "♥♦♣♠";
-		String value = " A23456789 JQK";
-		if (this.value == 10) return "10" + suit.charAt(this.suit);
-        return ("" + value.charAt(this.value) + suit.charAt(this.suit));
+        String suit = "♦♣♥♠";
+		String value = " A23456789TJQK";
+        return "" + value.charAt(this.value) + suit.charAt(this.suit);
     }
 }
 
+
 class Deck {
-    private int cardsDrawn = -1;
+    private int cardsDrawn = 0;
     private Card[] cardsArray = new Card[52];
-    Random random = new Random();
-    Deck(){
-        for(int value = 1; value < 14; value ++){
-            for(int suit = 0; suit < 4; suit ++){
-                cardsArray[(value-1)*4+suit] = new Card(value, suit);
+    
+    
+    Deck() {
+        for(int value = 1; value < 14; value ++) {
+            for(int suit = 0; suit < 4; suit ++) {
+                cardsArray[(value - 1) * 4 + suit] = new Card(value, suit);
             }
         }
     }
     
-    String toStr(){
-        String wholeDeck = "";
-        for(int i = 0; i < 51; i ++){
-            wholeDeck += this.cardsArray[i].toStr() + ", ";
-        }
-        wholeDeck += this.cardsArray[51].toStr();
-        return wholeDeck;
-    }
     
-    Card getCard(int index){
+    Card getCard(int index) {
         return cardsArray[index];
     }
     
-    Card drawCard(boolean faceUp){
-        Card card = drawCard();
-        card.isFaceUp = faceUp;
+    
+    Card draw(boolean faceUp) {
+        Card card = draw();
+        card.flip();
         return card;
     }
     
-    Card drawCard(){
-        cardsDrawn ++;
-        if(cardsDrawn < 52) return cardsArray[cardsDrawn];
+    
+    Card draw() {
+        cardsDrawn++;
+        if (cardsDrawn < 52) return cardsArray[cardsDrawn - 1];
         return null;
     }
     
-    void reset(){
-        cardsDrawn = -1;
+    
+    void reset() {
+        cardsDrawn = 0;
     }
     
-    void shuffle(){
-        int s;
-        Card temp;
-        for(int i = 0; i < 52; i ++){
-            s = random.nextInt(52);
-            temp = this.cardsArray[s];
-            this.cardsArray[s] = this.cardsArray[i];
+    
+    void shuffle() {
+        for(int i = cardsDrawn; i < 52; i++) {
+            int random = (int)(Math.random() * (52 - i) + i);
+            Card temp = this.cardsArray[random];
+            this.cardsArray[random] = this.cardsArray[i];
             this.cardsArray[i] = temp;
         }
     }
 }
 
+
 class BlackJack {
-    private Deck deck = new Deck();
-    private Card[] playerHand = new Card[5];
-    private Card[] dealerHand = new Card[5];
-    private int numCardsDealer = 0;
-    private int numCardsPlayer = 0;
+    private Deck deck;
+    private Card[][] hands;
+    private int[] numCards;
+    private int[] hardScores;
+    private int[] softScores;
+    private boolean[] stood;
+    private int whosTurn;
+    private int numPlayers;
     
-    BlackJack(){}
     
-    int getScore(int who, boolean hard) {
-        int sum = 0;
-        boolean foundAce = false;
-        Card[] hand;
-        int numCards;
-        
-        if (who == -1) { // dealer
-            hand = dealerHand;
-            numCards = numCardsDealer;
-        } else { // player
-            hand = playerHand;
-            numCards = numCardsPlayer;
-        }
-        
-        for (int i = 0; i < numCards; i++) {
-            if (hand[i].getValue() > 9) {
-                sum += 10;
-            } else if (hand[i].getValue() == 1 && !foundAce) {
-                if (hard) {
-                    sum += 1;
-                } else {
-                    sum += 11;
-                }
-                foundAce = true;
-            }
-            else {
-                sum += hand[i].getValue();
-            }
-        }
-        return sum;
+    private final int DEALER = 0;
+    
+    
+    BlackJack() {
+        deck = new Deck();
     }
     
-    void newGame(){
+    
+    void newGame(int numPlayers){
+        this.numPlayers = numPlayers;
         deck.reset();
         deck.shuffle();
-        playerHand[0] = deck.drawCard();
-        playerHand[1] = deck.drawCard();
-        dealerHand[0] = deck.drawCard(false);
-        dealerHand[1] = deck.drawCard();
-        numCardsDealer = 2;
-        numCardsPlayer = 2;
-        printState(false);
+        
+        hands = new Card[numPlayers + 1][5];
+        numCards = new int[numPlayers + 1];
+        hardScores = new int[numPlayers + 1];
+        softScores = new int[numPlayers + 1];
+        stood = new boolean[numPlayers + 1];
+        whosTurn = 1;
+        
+        // Every player draws two cards.
+        for (int i = 0; i <= numPlayers; i++) {
+            hit(i);
+            hit(i);
+        }
+        
+        // Dealer's first card is face-down.
+        hands[DEALER][0].flip();
+        printState();
+        
         Scanner sc = new Scanner(System.in);
         
-        // Players turn
-        while (true) {
+        // Players' turns.
+        while (!isDealersTurn()) {
+            // Skip the player's turn if they've already stood.
+            if (stood[whosTurn]) {
+                ++whosTurn;
+                if (whosTurn == numPlayers + 1) whosTurn = 1;
+                continue;
+            }
+            
+            // If they get an automatic 21 at the start.
+            if (softScores[whosTurn] == 21) {
+                System.out.println("PLAYER " + whosTurn + " GOT BLACKJACK!");
+                stand(whosTurn);
+                ++whosTurn;
+                if (whosTurn == numPlayers + 1) whosTurn = 1;
+                continue;
+            }
+            
+            System.out.println("\nPlayer " + whosTurn + "'s turn.");
             System.out.println("Press H to hit, or S to stand: ");
             String input = sc.nextLine();
+            
             if (input.equals("h") || input.equals("H")) {
-                hit(0);
+                hit(whosTurn);
             } else {
-                stand(0);
-                break;
+                stand(whosTurn);
+                
+                ++whosTurn;
+                if (whosTurn == numPlayers + 1) whosTurn = 1;
+                continue;
             }
-            printState(false);
-            if (getScore(0, true) > 21) {
-                System.out.println("PLAYER BUSTED! DEALER WINS!");
-                return;
-            } else if (getScore(0, true) == 21 || getScore(0, false) == 21 || playerHand[4] != null) {
-                System.out.println("BLACKJACK! PLAYER WINS!");
-                return;
+            
+            printState();
+            
+            // Automatically stand once 21 or over.
+            if (hardScores[whosTurn] > 21) {
+                System.out.println("PLAYER " + whosTurn + " BUSTED!");
+                stand(whosTurn);
+            } else if (hardScores[whosTurn] == 21 || softScores[whosTurn] == 21 || numCards[whosTurn] == 5) {
+                System.out.println("PLAYER " + whosTurn + " GOT BLACKJACK!");
+                stand(whosTurn);
             }
+            
+            ++whosTurn;
+            if (whosTurn == numPlayers + 1) whosTurn = 1;
         }
         
-        // dealer's turn
-        dealerHand[0].flip();
+        // Dealer's turn.
+        System.out.println("\nDEALER'S TURN");
+        hands[DEALER][0].flip();
         
         while(true) {
-            printState(true);
-            System.out.print("Press ENTER to continue: ");
-            String input = sc.nextLine();
-            int dealerScore = getScore(-1, true);
-            if (dealerScore >= 17 && dealerScore < 22) {
-                stand(-1);
+            printState();
+            System.out.print("\nPress ENTER to continue: ");
+            sc.nextLine();
+            
+            // Automatically stand once 17 or over.
+            if (hardScores[DEALER] >= 17 || softScores[DEALER] >= 17 && softScores[DEALER] <= 21) {
+                stand(DEALER);
                 break;
-            } else if (dealerScore > 21) {
-                System.out.println("DEALER BUSTED! PLAYER WINS!");
-                return;
-            } else if (dealerHand[4] != null || dealerScore == 21) {
-                System.out.println("BLACKJACK! DEALER WINS!");
-                return;
+            }
+            hit(DEALER);
+        }
+        
+        // Final results.
+        for (int who = 1; who <= numPlayers; ++who) {
+            if (hardScores[who] > 21) {
+                System.out.println("Player " + who + " busted.");
+            } else if (hardScores[DEALER] > 21) {
+                System.out.println("Player " + who + " beat the dealer.");
+            } else if (softScores[who] < 22 && softScores[DEALER] < 22 && softScores[who] >= softScores[DEALER]) {
+                if (softScores[who] == softScores[DEALER]) {
+                    System.out.println("Player " + who + " tied the dealer.");
+                } else {
+                    System.out.println("Player " + who + " beat the dealer.");
+                }
+            } else if (softScores[who] < 22 && softScores[who] >= hardScores[DEALER]) {
+                if (softScores[who] == hardScores[DEALER]) {
+                    System.out.println("Player " + who + " tied the dealer.");
+                } else {
+                    System.out.println("Player " + who + " beat the dealer.");
+                }
+            } else if (softScores[DEALER] < 22 && hardScores[who] >= softScores[DEALER]) {
+                if (hardScores[who] == softScores[DEALER]) {
+                    System.out.println("Player " + who + " tied the dealer.");
+                } else {
+                    System.out.println("Player " + who + " beat the dealer.");
+                }
+            } else if (hardScores[who] >= hardScores[DEALER]) {
+                if (hardScores[who] == hardScores[DEALER]) {
+                    System.out.println("Player " + who + " tied the dealer.");
+                } else {
+                    System.out.println("Player " + who + " beat the dealer.");
+                }
             } else {
-                hit(-1);
+                System.out.println("Player " + who + " lost to the dealer.");
             }
         }
-        
-        // Calculate scores
-        int playerScore = getScore(0, false);
-        if (playerScore > 21) {
-            playerScore = getScore(0, true);
-        }
-        int dealerScore = getScore(-1, false);
-        if (dealerScore > 21) {
-            dealerScore = getScore(-1, true);
-        }
-        if (dealerScore == playerScore) {
-            System.out.println("DRAW!");
-        } else if (dealerScore > playerScore) {
-            System.out.println("DEALER WINS!");
-        } else {
-            System.out.println("PLAYER WINS!");
-        }
     }
     
+    
+    // Who draws one card. Updates the scores.
     void hit(int who) {
-        Card[] hand;
-        int numCards;
-        if (who == -1) { // dealer
-            hand = dealerHand;
-            numCards = numCardsDealer;
-        } else { // player
-            hand = playerHand;
-            numCards = numCardsPlayer;
-        }
+        Card card = deck.draw();
+        hands[who][numCards[who]] = card;
+        numCards[who]++;
         
-        hand[numCards] = deck.drawCard();
-        
-        if (who == -1) { // dealer
-            numCardsDealer++;
-        } else { // player
-            numCardsPlayer++;
+        // Update the scores
+        if (card.getValue() > 9) {
+            hardScores[who] += 10;
+            softScores[who] += 10;
+        } else if (card.getValue() == 1) {
+            hardScores[who] += 1;
+            softScores[who] += 11;
+        } else {
+            hardScores[who] += card.getValue();
+            softScores[who] += card.getValue();
         }
     }
     
-    void stand(int who) {}
     
-    void printState(boolean dealersTurn){
+    void stand(int who) {
+        stood[who] = true;
+    }
+    
+    
+    void printState(){
         System.out.print("Dealer: ");
-        for (int i = 0; i < numCardsDealer; ++i) {
-            System.out.print(dealerHand[i].toStr() + " ");
+        for (int i = 0; i < numCards[DEALER]; ++i) {
+            System.out.print(hands[DEALER][i] + " ");
         }
-        if (dealersTurn) {
-            System.out.println("Soft: " + getScore(-1, false) + " Hard: " + getScore(-1, true));
-        } else {
+        System.out.println();
+        
+        
+        for (int who = 1; who <= numPlayers; ++who) {
+            System.out.print("Player " + who + ": ");
+            for (int i = 0; i < numCards[who]; ++i) {
+               System.out.print(hands[who][i] + " ");
+            }
             System.out.println();
         }
-        System.out.print("Player: ");
-        for (int i = 0; i < numCardsPlayer; ++i) {
-            System.out.print(playerHand[i].toStr() + " ");
+    }
+    
+    
+    boolean isDealersTurn() {
+        for (int who = 1; who <= numPlayers; ++who) {
+            if (!stood[who]) return false;
         }
-        System.out.println("Soft: " + getScore(0, false) + " Hard: " + getScore(0, true));
-        
+        return true;
     }
 }
+
 
 public class Main {
     public static void main(String []args){
@@ -248,12 +291,14 @@ public class Main {
         BlackJack game = new BlackJack();
         
         while(true) {
-            game.newGame();
+            System.out.print("How many players? ");
+            game.newGame(Integer.parseInt(sc.nextLine()));
             System.out.print("Play Again? [Y/N]: ");
             String input = sc.nextLine();
             if (input.equals("n") || input.equals("N")) {
                 return;
             }
+            System.out.println();
         }
     }
 }
