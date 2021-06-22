@@ -97,6 +97,7 @@ class BlackJack {
     private boolean[] stood;
     private int whosTurn;
     private int numPlayers;
+    private boolean[] hasAce;
     
     
     private final int DEALER = 0;
@@ -117,6 +118,7 @@ class BlackJack {
         hardScores = new int[numPlayers + 1];
         softScores = new int[numPlayers + 1];
         stood = new boolean[numPlayers + 1];
+        hasAce = new boolean[numPlayers + 1];
         whosTurn = 1;
         
         // Every player draws two cards.
@@ -199,13 +201,15 @@ class BlackJack {
         for (int who = 1; who <= numPlayers; ++who) {
             if (hardScores[who] > 21) {
                 System.out.println("Player " + who + " busted.");
-            } else if (hardScores[DEALER] > 21) {
+            } else if (hardScores[DEALER] > 21 || (hardScores[who] <= 21 && numCards[who] == 5)) {
                 System.out.println("Player " + who + " beat the dealer.");
-            } else if (softScores[who] < 22 && softScores[DEALER] < 22 && softScores[who] >= softScores[DEALER]) {
+            } else if (softScores[who] < 22 && softScores[DEALER] < 22) {
                 if (softScores[who] == softScores[DEALER]) {
                     System.out.println("Player " + who + " tied the dealer.");
-                } else {
+                } else if (softScores[who] > softScores[DEALER]) {
                     System.out.println("Player " + who + " beat the dealer.");
+                } else {
+                    System.out.println("Player " + who + " lost to the dealer.");
                 }
             } else if (softScores[who] < 22 && softScores[who] >= hardScores[DEALER]) {
                 if (softScores[who] == hardScores[DEALER]) {
@@ -233,18 +237,19 @@ class BlackJack {
     
     
     // Who draws one card. Updates the scores.
-    void hit(int who) {
+    private void hit(int who) {
         Card card = deck.draw();
         hands[who][numCards[who]] = card;
         numCards[who]++;
         
         // Update the scores
-        if (card.getValue() > 9) {
-            hardScores[who] += 10;
-            softScores[who] += 10;
-        } else if (card.getValue() == 1) {
+        if (card.getValue() == 1 && !hasAce[who]) {
             hardScores[who] += 1;
             softScores[who] += 11;
+            hasAce[who] = true;
+        } else if (card.getValue() > 9) {
+            hardScores[who] += 10;
+            softScores[who] += 10;
         } else {
             hardScores[who] += card.getValue();
             softScores[who] += card.getValue();
@@ -252,19 +257,18 @@ class BlackJack {
     }
     
     
-    void stand(int who) {
+    private void stand(int who) {
         stood[who] = true;
     }
     
     
-    void printState(){
+    private void printState(){
         System.out.print("Dealer: ");
         for (int i = 0; i < numCards[DEALER]; ++i) {
             System.out.print(hands[DEALER][i] + " ");
         }
         System.out.println();
-        
-        
+
         for (int who = 1; who <= numPlayers; ++who) {
             System.out.print("Player " + who + ": ");
             for (int i = 0; i < numCards[who]; ++i) {
@@ -275,7 +279,7 @@ class BlackJack {
     }
     
     
-    boolean isDealersTurn() {
+    private boolean isDealersTurn() {
         for (int who = 1; who <= numPlayers; ++who) {
             if (!stood[who]) return false;
         }
