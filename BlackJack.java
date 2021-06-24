@@ -190,7 +190,7 @@ class BlackJack {
             sc.nextLine();
             
             // Automatically stand once 17 or over.
-            if (hardScores[DEALER] >= 17 || softScores[DEALER] >= 17 && softScores[DEALER] <= 21) {
+            if (hardScores[DEALER] >= 17 || softScores[DEALER] >= 17 && softScores[DEALER] <= 21 || numCards[DEALER] == 5) {
                 stand(DEALER);
                 break;
             }
@@ -201,9 +201,19 @@ class BlackJack {
         for (int who = 1; who <= numPlayers; ++who) {
             if (hardScores[who] > 21) {
                 System.out.println("Player " + who + " busted.");
-            } else if (hardScores[DEALER] > 21 || (hardScores[who] <= 21 && numCards[who] == 5)) {
+                continue;
+            }
+            if (hardScores[DEALER] > 21) {
                 System.out.println("Player " + who + " beat the dealer.");
-            } else if (softScores[who] < 22 && softScores[DEALER] < 22) {
+                continue;
+            }
+            if (hardScores[who] <= 21 && numCards[who] == 5) {
+                softScores[who] = 21;
+            }
+            if (hardScores[DEALER] <= 21 && numCards[DEALER] == 5) {
+                softScores[DEALER] = 21;
+            }
+            if (softScores[who] < 22 && softScores[DEALER] < 22) {
                 if (softScores[who] == softScores[DEALER]) {
                     System.out.println("Player " + who + " tied the dealer.");
                 } else if (softScores[who] > softScores[DEALER]) {
