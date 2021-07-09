@@ -95,7 +95,6 @@ class BlackJack {
     private int[] hardScores;
     private int[] softScores;
     private boolean[] stood;
-    private int whosTurn;
     private int numPlayers;
     private boolean[] hasAce;
     
@@ -119,7 +118,6 @@ class BlackJack {
         softScores = new int[numPlayers + 1];
         stood = new boolean[numPlayers + 1];
         hasAce = new boolean[numPlayers + 1];
-        whosTurn = 1;
         
         // Every player draws two cards.
         for (int i = 0; i <= numPlayers; i++) {
@@ -132,52 +130,53 @@ class BlackJack {
         printState();
         
         Scanner sc = new Scanner(System.in);
+        int whoseTurn = 1;
         
         // Players' turns.
         while (!isDealersTurn()) {
             // Skip the player's turn if they've already stood.
-            if (stood[whosTurn]) {
-                ++whosTurn;
-                if (whosTurn == numPlayers + 1) whosTurn = 1;
+            if (stood[whoseTurn]) {
+                ++whoseTurn;
+                if (whoseTurn == numPlayers + 1) whoseTurn = 1;
                 continue;
             }
             
             // If they get an automatic 21 at the start.
-            if (softScores[whosTurn] == 21) {
-                System.out.println("PLAYER " + whosTurn + " GOT BLACKJACK!");
-                stand(whosTurn);
-                ++whosTurn;
-                if (whosTurn == numPlayers + 1) whosTurn = 1;
+            if (softScores[whoseTurn] == 21) {
+                System.out.println("PLAYER " + whoseTurn + " GOT BLACKJACK!");
+                stand(whoseTurn);
+                ++whoseTurn;
+                if (whoseTurn == numPlayers + 1) whoseTurn = 1;
                 continue;
             }
             
-            System.out.println("\nPlayer " + whosTurn + "'s turn.");
+            System.out.println("\nPlayer " + whoseTurn + "'s turn.");
             System.out.println("Press H to hit, or S to stand: ");
             String input = sc.nextLine();
             
             if (input.equals("h") || input.equals("H")) {
-                hit(whosTurn);
+                hit(whoseTurn);
             } else {
-                stand(whosTurn);
+                stand(whoseTurn);
                 
-                ++whosTurn;
-                if (whosTurn == numPlayers + 1) whosTurn = 1;
+                ++whoseTurn;
+                if (whoseTurn == numPlayers + 1) whoseTurn = 1;
                 continue;
             }
             
             printState();
             
             // Automatically stand once 21 or over.
-            if (hardScores[whosTurn] > 21) {
-                System.out.println("PLAYER " + whosTurn + " BUSTED!");
-                stand(whosTurn);
-            } else if (hardScores[whosTurn] == 21 || softScores[whosTurn] == 21 || numCards[whosTurn] == 5) {
-                System.out.println("PLAYER " + whosTurn + " GOT BLACKJACK!");
-                stand(whosTurn);
+            if (hardScores[whoseTurn] > 21) {
+                System.out.println("PLAYER " + whoseTurn + " BUSTED!");
+                stand(whoseTurn);
+            } else if (hardScores[whoseTurn] == 21 || softScores[whoseTurn] == 21 || numCards[whoseTurn] == 5) {
+                System.out.println("PLAYER " + whoseTurn + " GOT BLACKJACK!");
+                stand(whoseTurn);
             }
             
-            ++whosTurn;
-            if (whosTurn == numPlayers + 1) whosTurn = 1;
+            ++whoseTurn;
+            if (whoseTurn == numPlayers + 1) whoseTurn = 1;
         }
         
         // Dealer's turn.
@@ -208,37 +207,20 @@ class BlackJack {
                 continue;
             }
             if (hardScores[who] <= 21 && numCards[who] == 5) {
-                softScores[who] = 21;
+                hardScores[who] = 21;
+            } else if (softScores[who] <= 21) {
+                hardScores[who] = softScores[who];
             }
             if (hardScores[DEALER] <= 21 && numCards[DEALER] == 5) {
-                softScores[DEALER] = 21;
+                hardScores[DEALER] = 21;
+            } else if (softScores[DEALER] <= 21) {
+                hardScores[DEALER] = softScores[DEALER];
             }
-            if (softScores[who] < 22 && softScores[DEALER] < 22) {
-                if (softScores[who] == softScores[DEALER]) {
-                    System.out.println("Player " + who + " tied the dealer.");
-                } else if (softScores[who] > softScores[DEALER]) {
-                    System.out.println("Player " + who + " beat the dealer.");
-                } else {
-                    System.out.println("Player " + who + " lost to the dealer.");
-                }
-            } else if (softScores[who] < 22 && softScores[who] >= hardScores[DEALER]) {
-                if (softScores[who] == hardScores[DEALER]) {
-                    System.out.println("Player " + who + " tied the dealer.");
-                } else {
-                    System.out.println("Player " + who + " beat the dealer.");
-                }
-            } else if (softScores[DEALER] < 22 && hardScores[who] >= softScores[DEALER]) {
-                if (hardScores[who] == softScores[DEALER]) {
-                    System.out.println("Player " + who + " tied the dealer.");
-                } else {
-                    System.out.println("Player " + who + " beat the dealer.");
-                }
-            } else if (hardScores[who] >= hardScores[DEALER]) {
-                if (hardScores[who] == hardScores[DEALER]) {
-                    System.out.println("Player " + who + " tied the dealer.");
-                } else {
-                    System.out.println("Player " + who + " beat the dealer.");
-                }
+            
+            if (hardScores[who] == hardScores[DEALER]) {
+                System.out.println("Player " + who + " tied the dealer.");
+            } else if (hardScores[who] > hardScores[DEALER]) {
+                System.out.println("Player " + who + " beat the dealer.");
             } else {
                 System.out.println("Player " + who + " lost to the dealer.");
             }
